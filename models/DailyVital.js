@@ -31,5 +31,5 @@ const DailyVitalSchema = new Schema({
       ref: 'User'
   }
 });
-const DailyVitalModel = mongoose.model('Vital', DailyVitalSchema);
+const DailyVitalModel = mongoose.model('DailyVital', DailyVitalSchema);
 module.exports = DailyVitalModel;
