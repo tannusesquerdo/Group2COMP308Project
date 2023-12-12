@@ -1,7 +1,7 @@
 // Load the Mongoose module and Schema object
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const VitalSchema = new Schema({
+const AlertSchema = new Schema({
   message: {
       type: String,
       trim: true,
@@ -19,5 +19,5 @@ const VitalSchema = new Schema({
       ref: 'User'
   }
 });
-const VitalModel = mongoose.model('Vital', VitalSchema);
-module.exports = VitalModel;
+const AlertModel = mongoose.model('Alert', AlertSchema);
+module.exports = AlertModel;
