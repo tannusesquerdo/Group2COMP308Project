@@ -5,7 +5,12 @@ const jwtKey = config.secretKey // generate this elsewhere
 const jwtExpirySeconds = 3000
 
 const User = require('../models/User')
+const Vital = require('../models/Vital')
+const DailyVital = require('../models/DailyVital')
+const Tip = require('../models/Tip')
+const Alert = require('../models/Alert')
 
+/**************************************************************** getAllUsers ****************************************************************/ 
 const getAllUsers = async () => {
   // Get all users from MongoDB
   const users = await User.find().select('-password').lean()
@@ -18,6 +23,113 @@ const getAllUsers = async () => {
   return users
 }
 
+/**************************************************************** getAllVital ****************************************************************/ 
+const getAllVital = async () => {
+  try {
+    // Retrieve all vital records from MongoDB
+    const allVitalRecords = await Vital.find().select('-patient').lean().exec();
+
+    // If no vital records
+    if (!allVitalRecords?.length) {
+      return new Error('No vital records found');
+    }
+
+    return allVitalRecords;
+  } catch (error) {
+    throw new Error('Error retrieving all vital records');
+  }
+};
+
+/**************************************************************** getVitalByPatientId ****************************************************************/ 
+const getVitalByPatientId = async (root, params) => {
+  const { patientId } = params;
+
+  // Confirm data
+  if (!patientId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  try {
+    // Find vital records by patient ID
+    const vitalRecords = await Vital.find({ patient: patientId }).select('-patient').lean().exec();
+
+    // If no vital records
+    if (!vitalRecords?.length) {
+      return new Error('No vital records found');
+    }
+
+    return vitalRecords;
+  } catch (error) {
+    throw new Error('Error retrieving vital records');
+  }
+};
+
+/**************************************************************** getDailyVitalByPatientId ****************************************************************/ 
+const getDailyVitalByPatientId = async (root, params) => {
+  const { patientId } = params;
+
+  // Confirm data
+  if (!patientId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  try {
+    // Find daily vital records by patient ID
+    const dailyVitalRecords = await DailyVital.find({ patient: patientId }).select('-patient').lean().exec();
+
+    // If no daily vital records
+    if (!dailyVitalRecords?.length) {
+      throw new Error('No daily vital records found');
+    }
+
+    return dailyVitalRecords;
+  } catch (error) {
+    throw new Error('Error retrieving daily vital records');
+  }
+};
+
+/**************************************************************** getAllTip ****************************************************************/ 
+const getAllTip = async () => {
+  try {
+    // Retrieve all tip records from MongoDB
+    const allTipRecords = await Tip.find().select('-_id').lean().exec();
+
+    // If no tip records
+    if (!allTipRecords?.length) {
+      return new Error('No tip records found');
+    }
+
+    return allTipRecords;
+  } catch (error) {
+    throw new Error('Error retrieving all tip records');
+  }
+};
+
+/**************************************************************** getAlertByPatientId ****************************************************************/ 
+const getAlertByPatientId = async (root, params) => {
+  const { patientId } = params;
+
+  // Confirm data
+  if (!patientId) {
+    return new Error('Please provide valid parameters');
+  }
+
+  try {
+    // Find alert records by patient ID
+    const alertRecords = await Alert.find({ patient: patientId }).select('-patient').lean().exec();
+
+    // If no alert records
+    if (!alertRecords?.length) {
+      return new Error('No alert records found');
+    }
+
+    return alertRecords;
+  } catch (error) {
+    return new Error('Error retrieving alert records');
+  }
+};
+
+/**************************************************************** createNewUser ****************************************************************/ 
 const createNewUser = async (root, params) => {
   const { email, password, roles, firstName, lastName } = params
 
@@ -43,7 +155,577 @@ const createNewUser = async (root, params) => {
   return user
 }
 
+/**************************************************************** updateUser ****************************************************************/ 
+const updateUser = async (root, params) => {
+  const { userId, email, password, roles, firstName, lastName } = params
+
+  // Confirm data
+  if (!userId || (!email && !password && !Array.isArray(roles) && !firstName && !lastName)) {
+    throw new Error('Please provide valid update parameters')
+  }
+
+  // Check if the user exists
+  const existingUser = await User.findById(userId).exec()
+
+  if (!existingUser) {
+    throw new Error('User not found')
+  }
+
+  // Update user fields if provided
+  if (email) {
+    // Check for duplicate email
+    const duplicate = await User.findOne({ email, _id: { $ne: userId } }).lean().exec()
+
+    if (duplicate) {
+      throw new Error('Duplicate email')
+    }
+
+    existingUser.email = email
+  }
+
+  if (password) {
+    existingUser.password = password
+  }
+
+  if (Array.isArray(roles) && roles.length > 0) {
+    existingUser.roles = roles
+  }
+
+  if (firstName) {
+    existingUser.firstName = firstName
+  }
+
+  if (lastName) {
+    existingUser.lastName = lastName
+  }
+
+  try {
+    const updatedUser = await existingUser.save()
+    return updatedUser
+  } catch (error) {
+    throw new Error('Error updating user')
+  }
+}
+
+/**************************************************************** deleteUser ****************************************************************/ 
+const deleteUser = async (root, params) => {
+  const { userId } = params;
+
+  // Confirm data
+  if (!userId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  // Check if the user exists
+  const existingUser = await User.findById(userId).exec();
+
+  if (!existingUser) {
+    throw new Error('User not found');
+  }
+
+  try {
+    await existingUser.remove();
+    return 'User deleted successfully';
+  } catch (error) {
+    throw new Error('Error deleting user');
+  }
+};
+
+/**************************************************************** createNewVital ****************************************************************/ 
+const createNewVital = async (root, params) => {
+  const {
+    age,
+    sex,
+    cp,
+    trestbps,
+    chol,
+    fbs,
+    restecg,
+    thalach,
+    exang,
+    oldpeak,
+    slope,
+    ca,
+    thal,
+    num,
+    updateDate,
+    patientId // Assuming you pass the patient's ID when creating a new vital
+  } = params;
+
+  // Confirm data
+  if (
+    !age ||
+    !sex ||
+    !cp ||
+    !trestbps ||
+    !chol ||
+    !fbs ||
+    !restecg ||
+    !thalach ||
+    !exang ||
+    !oldpeak ||
+    !slope ||
+    !ca ||
+    !thal ||
+    !num ||
+    !updateDate ||
+    !patientId
+  ) {
+    throw new Error('Please provide all required fields');
+  }
+
+  // Check if the patient exists
+  const existingPatient = await User.findById(patientId).exec();
+
+  if (!existingPatient) {
+    throw new Error('Patient not found');
+  }
+
+  const vitalObject = {
+    age,
+    sex,
+    cp,
+    trestbps,
+    chol,
+    fbs,
+    restecg,
+    thalach,
+    exang,
+    oldpeak,
+    slope,
+    ca,
+    thal,
+    num,
+    updateDate,
+    patient: patientId
+  };
+
+  const vitalModel = new Vital(vitalObject);
+
+  try {
+    const vital = await vitalModel.save();
+    return vital;
+  } catch (error) {
+    throw new Error('Error creating vital data');
+  }
+};
+
+/**************************************************************** updateVital ****************************************************************/ 
+const updateVital = async (root, params) => {
+  const {
+    vitalId,
+    age,
+    sex,
+    cp,
+    trestbps,
+    chol,
+    fbs,
+    restecg,
+    thalach,
+    exang,
+    oldpeak,
+    slope,
+    ca,
+    thal,
+    num,
+    updateDate,
+    patientId
+  } = params;
+
+  // Confirm data
+  if (!vitalId || (!age && !sex && !cp && !trestbps && !chol && !fbs && !restecg && !thalach &&
+    !exang && !oldpeak && !slope && !ca && !thal && !num && !updateDate && !patientId)) {
+    throw new Error('Please provide valid update parameters');
+  }
+
+  // Check if the vital record exists
+  const existingVital = await Vital.findById(vitalId).exec();
+
+  if (!existingVital) {
+    throw new Error('Vital record not found');
+  }
+
+  // Check if the patient exists
+  const existingPatient = await User.findById(patientId).exec();
+
+  if (!existingPatient) {
+    throw new Error('Patient not found');
+  }
+
+  // Update vital fields if provided
+  if (age) existingVital.age = age;
+  if (sex) existingVital.sex = sex;
+  if (cp) existingVital.cp = cp;
+  if (trestbps) existingVital.trestbps = trestbps;
+  if (chol) existingVital.chol = chol;
+  if (fbs) existingVital.fbs = fbs;
+  if (restecg) existingVital.restecg = restecg;
+  if (thalach) existingVital.thalach = thalach;
+  if (exang) existingVital.exang = exang;
+  if (oldpeak) existingVital.oldpeak = oldpeak;
+  if (slope) existingVital.slope = slope;
+  if (ca) existingVital.ca = ca;
+  if (thal) existingVital.thal = thal;
+  if (num) existingVital.num = num;
+  if (updateDate) existingVital.updateDate = updateDate;
+  if (patientId) existingVital.patient = patientId;
+
+  try {
+    const updatedVital = await existingVital.save();
+    return updatedVital;
+  } catch (error) {
+    throw new Error('Error updating vital record');
+  }
+};
+
+/**************************************************************** deleteVital ****************************************************************/ 
+const deleteVital = async (root, params) => {
+  const { vitalId } = params;
+
+  // Confirm data
+  if (!vitalId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  // Check if the vital record exists
+  const existingVital = await Vital.findById(vitalId).exec();
+
+  if (!existingVital) {
+    throw new Error('Vital record not found');
+  }
+
+  try {
+    await existingVital.remove();
+    return 'Vital record deleted successfully';
+  } catch (error) {
+    throw new Error('Error deleting vital record');
+  }
+};
+
+/**************************************************************** createNewDailyVital ****************************************************************/ 
+const createNewDailyVital = async (root, params) => {
+  const {
+    pulseRate,
+    bloodPressure,
+    weight,
+    temperature,
+    respRate,
+    updateDate,
+    patientId,
+  } = params;
+
+  // Confirm data
+  if (
+    !pulseRate ||
+    !bloodPressure ||
+    !weight ||
+    !temperature ||
+    !respRate ||
+    !updateDate ||
+    !patientId
+  ) {
+    throw new Error('Please provide all required fields');
+  }
+
+  // Check if the patient exists
+  const existingPatient = await User.findById(patientId).exec();
+
+  if (!existingPatient) {
+    throw new Error('Patient not found');
+  }
+
+  const dailyVitalObject = {
+    pulseRate,
+    bloodPressure,
+    weight,
+    temperature,
+    respRate,
+    updateDate,
+    patient: patientId,
+  };
+
+  const dailyVitalModel = new DailyVital(dailyVitalObject);
+
+  try {
+    const dailyVital = await dailyVitalModel.save();
+    return dailyVital;
+  } catch (error) {
+    throw new Error('Error creating daily vital data');
+  }
+};
+
+/**************************************************************** updateDailyVital ****************************************************************/ 
+const updateDailyVital = async (root, params) => {
+  const {
+    dailyVitalId,
+    pulseRate,
+    bloodPressure,
+    weight,
+    temperature,
+    respRate,
+    updateDate,
+    patientId,
+  } = params;
+
+  // Confirm data
+  if (
+    !dailyVitalId ||
+    (!pulseRate &&
+      !bloodPressure &&
+      !weight &&
+      !temperature &&
+      !respRate &&
+      !updateDate &&
+      !patientId)
+  ) {
+    throw new Error('Please provide valid update parameters');
+  }
+
+  // Check if the daily vital record exists
+  const existingDailyVital = await DailyVital.findById(dailyVitalId).exec();
+
+  if (!existingDailyVital) {
+    throw new Error('Daily vital record not found');
+  }
+
+  // Check if the patient exists
+  const existingPatient = await User.findById(patientId).exec();
+
+  if (!existingPatient) {
+    throw new Error('Patient not found');
+  }
+
+  // Update daily vital fields if provided
+  if (pulseRate) existingDailyVital.pulseRate = pulseRate;
+  if (bloodPressure) existingDailyVital.bloodPressure = bloodPressure;
+  if (weight) existingDailyVital.weight = weight;
+  if (temperature) existingDailyVital.temperature = temperature;
+  if (respRate) existingDailyVital.respRate = respRate;
+  if (updateDate) existingDailyVital.updateDate = updateDate;
+  if (patientId) existingDailyVital.patient = patientId;
+
+  try {
+    const updatedDailyVital = await existingDailyVital.save();
+    return updatedDailyVital;
+  } catch (error) {
+    throw new Error('Error updating daily vital record');
+  }
+};
+
+/**************************************************************** deleteDailyVital ****************************************************************/ 
+const deleteDailyVital = async (root, params) => {
+  const { dailyVitalId } = params;
+
+  // Confirm data
+  if (!dailyVitalId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  // Check if the daily vital record exists
+  const existingDailyVital = await DailyVital.findById(dailyVitalId).exec();
+
+  if (!existingDailyVital) {
+    throw new Error('Daily vital record not found');
+  }
+
+  try {
+    await existingDailyVital.remove();
+    return 'Daily vital record deleted successfully';
+  } catch (error) {
+    throw new Error('Error deleting daily vital record');
+  }
+};
+
+/**************************************************************** createNewTip ****************************************************************/ 
+const createNewTip = async (root, params) => {
+  const { title, description } = params;
+
+  // Confirm data
+  if (!title || !description) {
+    throw new Error('Please provide all required fields');
+  }
+
+  const tipObject = {
+    title,
+    description,
+  };
+
+  const tipModel = new Tip(tipObject);
+
+  try {
+    const tip = await tipModel.save();
+    return tip;
+  } catch (error) {
+    throw new Error('Error creating tip');
+  }
+};
+
+/**************************************************************** updateTip ****************************************************************/ 
+const updateTip = async (root, params) => {
+  const { tipId, title, description } = params;
+
+  // Confirm data
+  if (!tipId || (!title && !description)) {
+    throw new Error('Please provide valid update parameters');
+  }
+
+  // Check if the tip record exists
+  const existingTip = await Tip.findById(tipId).exec();
+
+  if (!existingTip) {
+    throw new Error('Tip record not found');
+  }
+
+  // Update tip fields if provided
+  if (title) existingTip.title = title;
+  if (description) existingTip.description = description;
+
+  try {
+    const updatedTip = await existingTip.save();
+    return updatedTip;
+  } catch (error) {
+    throw new Error('Error updating tip');
+  }
+};
+
+/**************************************************************** deleteTip ****************************************************************/ 
+const deleteTip = async (root, params) => {
+  const { tipId } = params;
+
+  // Confirm data
+  if (!tipId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  // Check if the tip record exists
+  const existingTip = await Tip.findById(tipId).exec();
+
+  if (!existingTip) {
+    throw new Error('Tip record not found');
+  }
+
+  try {
+    await existingTip.remove();
+    return 'Tip deleted successfully';
+  } catch (error) {
+    throw new Error('Error deleting tip');
+  }
+};
+
+/**************************************************************** createNewAlert ****************************************************************/ 
+const createNewAlert = async (root, params) => {
+  const { message, address, phone, patientId } = params;
+
+  // Confirm data
+  if (!message || !address || !phone || !patientId) {
+    throw new Error('Please provide all required fields');
+  }
+
+  // Check if the patient exists
+  const existingPatient = await User.findById(patientId).exec();
+
+  if (!existingPatient) {
+    throw new Error('Patient not found');
+  }
+
+  const alertObject = {
+    message,
+    address,
+    phone,
+    patient: patientId,
+  };
+
+  const alertModel = new Alert(alertObject);
+
+  try {
+    const alert = await alertModel.save();
+    return alert;
+  } catch (error) {
+    throw new Error('Error creating alert');
+  }
+};
+
+/**************************************************************** updateAlert ****************************************************************/ 
+const updateAlert = async (root, params) => {
+  const { alertId, message, address, phone, patientId } = params;
+
+  // Confirm data
+  if (!alertId || (!message && !address && !phone && !patientId)) {
+    throw new Error('Please provide valid update parameters');
+  }
+
+  // Check if the alert record exists
+  const existingAlert = await Alert.findById(alertId).exec();
+
+  if (!existingAlert) {
+    throw new Error('Alert record not found');
+  }
+
+  // Check if the patient exists
+  const existingPatient = await User.findById(patientId).exec();
+
+  if (!existingPatient) {
+    throw new Error('Patient not found');
+  }
+
+  // Update alert fields if provided
+  if (message) existingAlert.message = message;
+  if (address) existingAlert.address = address;
+  if (phone) existingAlert.phone = phone;
+  if (patientId) existingAlert.patient = patientId;
+
+  try {
+    const updatedAlert = await existingAlert.save();
+    return updatedAlert;
+  } catch (error) {
+    throw new Error('Error updating alert');
+  }
+};
+
+/**************************************************************** deleteAlert ****************************************************************/ 
+const deleteAlert = async (root, params) => {
+  const { alertId } = params;
+
+  // Confirm data
+  if (!alertId) {
+    throw new Error('Please provide valid parameters');
+  }
+
+  // Check if the alert record exists
+  const existingAlert = await Alert.findById(alertId).exec();
+
+  if (!existingAlert) {
+    throw new Error('Alert record not found');
+  }
+
+  try {
+    await existingAlert.remove();
+    return 'Alert deleted successfully';
+  } catch (error) {
+    throw new Error('Error deleting alert');
+  }
+};
+
 module.exports = {
   getAllUsers,
+  getAllVital,
+  getVitalByPatientId,
+  getDailyVitalByPatientId,
+  getAllTip,
+  getAlertByPatientId,
   createNewUser,
-}
+  updateUser,
+  deleteUser,
+  createNewVital,
+  updateVital,
+  deleteVital,
+  createNewDailyVital,
+  updateDailyVital,
+  deleteDailyVital,
+  createNewTip,
+  updateTip,
+  deleteTip,
+  createNewAlert,
+  updateAlert,
+  deleteAlert,
+};
