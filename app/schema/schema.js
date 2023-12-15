@@ -18,7 +18,6 @@ const {
   updateTip,
   createNewDailyVital,
   updateDailyVital,
-  createNewAlert,
   updateAlert,
   createNewVital,
   authenticate,
