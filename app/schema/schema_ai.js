@@ -7,7 +7,6 @@ const {
   GraphQLFloat,
   GraphQLList,
   GraphQLID,
-  GraphQLNonNull,
 } = require('graphql')
 
 const { getAllUsers, createNewUser } = require('../../resolvers/usersResolvers')
