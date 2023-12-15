@@ -15,25 +15,28 @@ const {
   createNewUser,
   authenticate,
   isSignedIn,
+  ro,
 } = require('../../resolvers/usersResolvers')
 
 const UserType = new GraphQLObjectType({
   name: 'User',
   fields: {
-    id: { type: GraphQLID },
+    _id: { type: GraphQLID },
     email: { type: GraphQLString },
     password: { type: GraphQLString },
     roles: { type: new GraphQLList(GraphQLString) },
     firstName: { type: GraphQLString },
     lastName: { type: GraphQLString },
     active: { type: GraphQLBoolean },
+    gender: { type: GraphQLString },
+    dob: { type: GraphQLString },
   },
 })
 
 const VitalType = new GraphQLObjectType({
   name: 'Vital',
   fields: {
-    id: { type: GraphQLID },
+    _id: { type: GraphQLID },
     age: { type: GraphQLInt },
     sex: { type: GraphQLInt },
     cp: { type: GraphQLInt },
@@ -56,7 +59,7 @@ const VitalType = new GraphQLObjectType({
 const DailyVitalType = new GraphQLObjectType({
   name: 'DailyVital',
   fields: {
-    id: { type: GraphQLID },
+    _id: { type: GraphQLID },
     pulseRate: { type: GraphQLFloat },
     bloodPresure: { type: GraphQLFloat },
     weight: { type: GraphQLFloat },
@@ -69,7 +72,7 @@ const DailyVitalType = new GraphQLObjectType({
 const TipType = new GraphQLObjectType({
   name: 'Tip',
   fields: {
-    id: { type: GraphQLID },
+    _id: { type: GraphQLID },
     title: { type: GraphQLString },
     description: { type: GraphQLString },
   },
@@ -78,7 +81,7 @@ const TipType = new GraphQLObjectType({
 const AlertType = new GraphQLObjectType({
   name: 'Alert',
   fields: {
-    id: { type: GraphQLID },
+    _id: { type: GraphQLID },
     message: { type: GraphQLString },
     address: { type: GraphQLString },
     phone: { type: GraphQLString },
@@ -185,6 +188,8 @@ const mutation = new GraphQLObjectType({
         roles: { type: new GraphQLList(GraphQLString) },
         firstName: { type: GraphQLString },
         lastName: { type: GraphQLString },
+        gender: { type: GraphQLString },
+        dob: { type: GraphQLString },
       },
       resolve(parent, args) {
         return createNewUser(parent, args)
@@ -200,6 +205,8 @@ const mutation = new GraphQLObjectType({
         roles: { type: new GraphQLList(GraphQLString) },
         firstName: { type: GraphQLString },
         lastName: { type: GraphQLString },
+        gender: { type: GraphQLString },
+        dob: { type: GraphQLString },
       },
       resolve(parent, args) {
         return updateUser(parent, args)
