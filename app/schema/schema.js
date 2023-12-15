@@ -95,7 +95,7 @@ const AlertType = new GraphQLObjectType({
     message: { type: GraphQLString },
     address: { type: GraphQLString },
     phone: { type: GraphQLString },
-    patient: { type: GraphQLID },
+    patient: { type: UserType },
   },
 })
 

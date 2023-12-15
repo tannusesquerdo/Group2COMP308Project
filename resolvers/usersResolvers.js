@@ -135,10 +135,9 @@ const getAlertByPatientId = async (root, params) => {
 
 /**************************************************************** getAlerts ****************************************************************/
 const getAlerts = async () => {
-
   try {
     // Find alert records by patient ID
-    const alertRecords = await Alert.find().select('-patient').lean().exec()
+    const alertRecords = await Alert.find().populate('patient').lean().exec()
 
     // If no alert records
     if (!alertRecords?.length) {
@@ -147,10 +146,10 @@ const getAlerts = async () => {
 
     return alertRecords
   } catch (error) {
+    console.log(error)
     return new Error('Error retrieving alert records')
   }
 }
-
 
 /**************************************************************** createNewUser ****************************************************************/
 const createNewUser = async (root, params) => {
