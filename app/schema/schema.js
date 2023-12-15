@@ -22,9 +22,7 @@ const {
   createNewVital,
   authenticate,
   isSignedIn,
-  createNewVital,
   createNewAlert,
-  ro,
 } = require('../../resolvers/usersResolvers')
 
 const UserType = new GraphQLObjectType({
