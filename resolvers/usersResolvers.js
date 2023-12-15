@@ -72,24 +72,19 @@ const getVitalByPatientId = async (root, params) => {
 
 /**************************************************************** getDailyVitalByPatientId ****************************************************************/
 const getDailyVitalByPatientId = async (root, params) => {
-  const { patientId } = params
+  const { patient } = params
 
   // Confirm data
-  if (!patientId) {
+  if (!patient) {
     throw new Error('Please provide valid parameters')
   }
 
   try {
     // Find daily vital records by patient ID
-    const dailyVitalRecords = await DailyVital.find({ patient: patientId })
+    const dailyVitalRecords = await DailyVital.find({ patient: patient })
       .select('-patient')
       .lean()
       .exec()
-
-    // If no daily vital records
-    if (!dailyVitalRecords?.length) {
-      throw new Error('No daily vital records found')
-    }
 
     return dailyVitalRecords
   } catch (error) {

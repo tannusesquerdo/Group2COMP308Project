@@ -23,6 +23,7 @@ const {
   authenticate,
   isSignedIn,
   createNewAlert,
+  getDailyVitalByPatientId,
 } = require('../../resolvers/usersResolvers')
 
 const UserType = new GraphQLObjectType({
@@ -72,6 +73,7 @@ const DailyVitalType = new GraphQLObjectType({
     weight: { type: GraphQLFloat },
     temperature: { type: GraphQLFloat },
     updateDate: { type: GraphQLString },
+    respRate: { type: GraphQLString },
     patient: { type: GraphQLID },
   },
 })
@@ -149,7 +151,7 @@ const RootQuery = new GraphQLObjectType({
         patient: { type: GraphQLString },
       },
       resolve(parent, args) {
-        return getDailyVital(parent, args)
+        return getDailyVitalByPatientId(parent, args)
       },
     },
     // getTip
