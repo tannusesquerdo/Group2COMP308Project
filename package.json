@@ -15,11 +15,8 @@
   },
   "dependencies": {
     "@graphql-tools/schema": "^10.0.0",
-<<<<<<< HEAD
     "@tensorflow/tfjs-node": "^4.15.0",
-=======
     "apollo-server-express": "^3.13.0",
->>>>>>> main
     "bcrypt": "^5.1.1",
     "colors": "^1.4.0",
     "compression": "^1.7.4",
