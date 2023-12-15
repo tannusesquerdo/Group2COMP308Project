@@ -14,7 +14,7 @@ const Alert = require('../models/Alert')
 /**************************************************************** getAllUsers ****************************************************************/
 const getAllUsers = async () => {
   // Get all users from MongoDB
-  const users = await User.find().select('-password').lean()
+  const users = await User.find({ roles: 'Patient' }).select('-password').lean()
 
   // If no users
   if (!users?.length) {
@@ -135,7 +135,7 @@ const getAlertByPatientId = async (root, params) => {
 
 /**************************************************************** createNewUser ****************************************************************/
 const createNewUser = async (root, params) => {
-  const { email, password, roles, firstName, lastName } = params
+  const { email, password, roles, firstName, lastName, gender, dob } = params
 
   // Confirm data
   if ((!email || !password || !Array.isArray(roles) || !roles.length, !firstName || !lastName)) {
@@ -149,7 +149,7 @@ const createNewUser = async (root, params) => {
     return new AuthenticationError('Duplicate username')
   }
 
-  const userObject = { email, password, roles, firstName, lastName }
+  const userObject = { email, password, roles, firstName, lastName, gender, dob }
 
   const userModel = new User(userObject)
   const user = await userModel.save()
@@ -160,12 +160,19 @@ const createNewUser = async (root, params) => {
     algorithm: 'HS256',
     expiresIn: jwtExpirySeconds,
   })
-  return { token, user }
+
+  return {
+    status: 'success',
+    message: 'Patient created successfully!',
+    data: {
+      ...user,
+    },
+  }
 }
 
 /**************************************************************** updateUser ****************************************************************/
 const updateUser = async (root, params) => {
-  const { userId, email, password, roles, firstName, lastName } = params
+  const { userId, email, password, roles, firstName, lastName, gender, dob } = params
 
   // Confirm data
   if (!userId || (!email && !password && !Array.isArray(roles) && !firstName && !lastName)) {
@@ -207,6 +214,14 @@ const updateUser = async (root, params) => {
 
   if (lastName) {
     existingUser.lastName = lastName
+  }
+
+  if (gender) {
+    existingUser.gender = gender
+  }
+
+  if (dob) {
+    existingUser.dob = dob
   }
 
   try {
