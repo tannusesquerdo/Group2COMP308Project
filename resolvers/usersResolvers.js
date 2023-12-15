@@ -1,14 +1,12 @@
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const config = require('../config/config')
+const { AuthenticationError, ForbiddenError } = require('apollo-server-express')
 const jwtKey = config.secretKey // generate this elsewhere
-const jwtExpirySeconds = 3000
+const jwtExpirySeconds = 30000
 const tf = require('@tensorflow/tfjs-node')
 const fs = require('fs')
 const path = require('path')
-// const binary = fs.readFile('../hd-model/hd-model.bin')
-
-// process.stdout.write(binary.slice(0, 48))
 
 const User = require('../models/User')
 const Vital = require('../models/Vital')
@@ -21,7 +19,7 @@ const MODEL_URL = require('../hd-model/heart-model.json')
 /**************************************************************** getAllUsers ****************************************************************/
 const getAllUsers = async () => {
   // Get all users from MongoDB
-  const users = await User.find().select('-password').lean()
+  const users = await User.find({ roles: 'Patient' }).select('-password').lean()
 
   // If no users
   if (!users?.length) {
@@ -142,7 +140,7 @@ const getAlertByPatientId = async (root, params) => {
 
 /**************************************************************** createNewUser ****************************************************************/
 const createNewUser = async (root, params) => {
-  const { email, password, roles, firstName, lastName } = params
+  const { email, password, roles, firstName, lastName, gender, dob } = params
 
   // Confirm data
   if ((!email || !password || !Array.isArray(roles) || !roles.length, !firstName || !lastName)) {
@@ -153,22 +151,33 @@ const createNewUser = async (root, params) => {
   const duplicate = await User.findOne({ email }).lean().exec()
 
   if (duplicate) {
-    return new Error('Duplicate username')
+    return new AuthenticationError('Duplicate username')
   }
 
-  const userObject = { email, password, roles, firstName, lastName }
+  const userObject = { email, password, roles, firstName, lastName, gender, dob }
 
   const userModel = new User(userObject)
   const user = await userModel.save()
   if (!user) {
-    throw new Error('Invalid user data received')
+    throw new AuthenticationError('Invalid user data received')
   }
-  return user
+  const token = jwt.sign({ _id: user._id }, jwtKey, {
+    algorithm: 'HS256',
+    expiresIn: jwtExpirySeconds,
+  })
+
+  return {
+    status: 'success',
+    message: 'Patient created successfully!',
+    data: {
+      ...user,
+    },
+  }
 }
 
 /**************************************************************** updateUser ****************************************************************/
 const updateUser = async (root, params) => {
-  const { userId, email, password, roles, firstName, lastName } = params
+  const { userId, email, password, roles, firstName, lastName, gender, dob } = params
 
   // Confirm data
   if (!userId || (!email && !password && !Array.isArray(roles) && !firstName && !lastName)) {
@@ -210,6 +219,14 @@ const updateUser = async (root, params) => {
 
   if (lastName) {
     existingUser.lastName = lastName
+  }
+
+  if (gender) {
+    existingUser.gender = gender
+  }
+
+  if (dob) {
+    existingUser.dob = dob
   }
 
   try {
@@ -767,12 +784,117 @@ const prediction = async (root, params) => {
   } else {
     throw new Error('User not found')
   }
+}
 
-  console.log(vitals)
+const authenticate = async (root, args, context) => {
+  const { req, res } = context
+  // Get credentials from request
+  const email = args.email
+  const password = args.password
 
-  console.log(user)
+  try {
+    // find the user with the given email
+    const user = await User.findOne({ email })
 
-  return 'COMP 308'
+    if (!user) {
+      // User not found
+      return {
+        status: 'error',
+        message: 'User not found!',
+        data: null,
+      }
+    }
+
+    // compare passwords
+    const passwordMatch = bcrypt.compareSync(password, user.password)
+
+    if (passwordMatch) {
+      const token = jwt.sign({ id: user._id }, jwtKey, {
+        algorithm: 'HS256',
+        expiresIn: jwtExpirySeconds,
+      })
+
+      res.cookie('token', token, {
+        maxAge: jwtExpirySeconds * 1000,
+        httpOnly: true,
+      })
+
+      req.user = user
+
+      // Return the user data and token
+      return {
+        status: 'success',
+        message: 'User authenticated successfully!',
+        data: {
+          token,
+          user,
+        },
+      }
+    } else {
+      // Invalid password
+      return {
+        status: 'error',
+        message: 'Invalid email/password!',
+        data: null,
+      }
+    }
+  } catch (error) {
+    // Handle any other errors
+    console.error('Authentication error:', error)
+    return {
+      status: 'error',
+      message: 'Internal server error',
+      data: null,
+    }
+  }
+}
+
+const isSignedIn = async (root, args, context) => {
+  const { req, res } = context
+
+  try {
+    // Obtain the session token from the requests cookies
+    const token = req.cookies.token
+
+    // If the cookie is not set, return 'auth'
+    if (!token) {
+      return {
+        status: 'error',
+        message: 'No token provided!',
+        data: null,
+      }
+    }
+
+    // Verify the JWT token
+    const payload = await jwt.verify(token, jwtKey)
+
+    // Token is valid, return the user information
+    return {
+      status: 'success',
+      message: 'Token valid!',
+      data: {
+        user: {},
+        token,
+      },
+    }
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      // The JWT is unauthorized, return a 401 error
+      return {
+        status: 'error',
+        message: 'Unauthorized',
+        data: null,
+      }
+    }
+
+    // Otherwise, return a bad request error
+    console.error('Error in isSignedIn:', error)
+    return {
+      status: 'error',
+      message: 'Bad Request',
+      data: null,
+    }
+  }
 }
 
 module.exports = {
@@ -798,4 +920,6 @@ module.exports = {
   updateAlert,
   deleteAlert,
   prediction,
+  authenticate,
+  isSignedIn,
 }
