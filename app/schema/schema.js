@@ -7,9 +7,15 @@ const {
   GraphQLFloat,
   GraphQLList,
   GraphQLID,
+  GraphQLNonNull,
 } = require('graphql')
 
-const { getAllUsers, createNewUser } = require('../../resolvers/usersResolvers')
+const {
+  getAllUsers,
+  createNewUser,
+  authenticate,
+  isSignedIn,
+} = require('../../resolvers/usersResolvers')
 
 const UserType = new GraphQLObjectType({
   name: 'User',
@@ -80,6 +86,32 @@ const AlertType = new GraphQLObjectType({
   },
 })
 
+const AuthenticationResultType = new GraphQLObjectType({
+  name: 'AuthenticationResult',
+  fields: () => ({
+    status: { type: GraphQLString },
+    message: { type: GraphQLString },
+    data: { type: UserType },
+  }),
+})
+
+const LoginDataType = new GraphQLObjectType({
+  name: 'LoginData',
+  fields: () => ({
+    token: { type: GraphQLString },
+    user: { type: UserType },
+  }),
+})
+
+const LoginResponseType = new GraphQLObjectType({
+  name: 'LoginResponse',
+  fields: () => ({
+    status: { type: GraphQLString },
+    message: { type: GraphQLString },
+    data: { type: LoginDataType },
+  }),
+})
+
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
@@ -134,6 +166,10 @@ const RootQuery = new GraphQLObjectType({
         return getAlert(parent, args)
       },
     },
+    isLoggedIn: {
+      type: LoginResponseType,
+      resolve: isSignedIn,
+    },
   },
 })
 
@@ -142,7 +178,7 @@ const mutation = new GraphQLObjectType({
   fields: {
     // createNewUser
     createNewUser: {
-      type: UserType,
+      type: AuthenticationResultType,
       args: {
         email: { type: GraphQLString },
         password: { type: GraphQLString },
@@ -299,6 +335,22 @@ const mutation = new GraphQLObjectType({
       },
       resolve(parent, args) {
         return updateAlert(parent, args)
+      },
+    },
+    // login
+    login: {
+      type: LoginResponseType,
+      args: {
+        email: { type: GraphQLString },
+        password: { type: GraphQLString },
+      },
+      resolve: authenticate,
+    },
+    logOut: {
+      type: GraphQLString,
+      resolve: (parent, args, { res }) => {
+        res.clearCookie('token')
+        return 'Logged out successfully!'
       },
     },
   },
