@@ -655,15 +655,15 @@ const deleteTip = async (root, params) => {
 
 /**************************************************************** createNewAlert ****************************************************************/
 const createNewAlert = async (root, params) => {
-  const { message, address, phone, patientId } = params
+  const { message, address, phone, patient } = params
 
   // Confirm data
-  if (!message || !address || !phone || !patientId) {
+  if (!message || !address || !phone || !patient) {
     throw new Error('Please provide all required fields')
   }
 
   // Check if the patient exists
-  const existingPatient = await User.findById(patientId).exec()
+  const existingPatient = await User.findById(patient).exec()
 
   if (!existingPatient) {
     throw new Error('Patient not found')
@@ -673,7 +673,7 @@ const createNewAlert = async (root, params) => {
     message,
     address,
     phone,
-    patient: patientId,
+    patient: patient,
   }
 
   const alertModel = new Alert(alertObject)

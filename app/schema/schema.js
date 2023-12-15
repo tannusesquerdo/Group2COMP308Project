@@ -23,6 +23,8 @@ const {
   createNewVital,
   authenticate,
   isSignedIn,
+  createNewVital,
+  createNewAlert,
   ro,
 } = require('../../resolvers/usersResolvers')
 
@@ -332,7 +334,7 @@ const mutation = new GraphQLObjectType({
         message: { type: GraphQLString },
         address: { type: GraphQLString },
         phone: { type: GraphQLString },
-        patient: { type: new GraphQLNonNull(GraphQLString) },
+        patient: { type: GraphQLID },
       },
       resolve(parent, args) {
         return createNewAlert(parent, args)
@@ -358,6 +360,7 @@ const mutation = new GraphQLObjectType({
         id: { type: new GraphQLNonNull(GraphQLString) },
       },
       resolve: (parent, args) => prediction(parent, args),
+    }, // Add a comma here
     // login
     login: {
       type: LoginResponseType,
