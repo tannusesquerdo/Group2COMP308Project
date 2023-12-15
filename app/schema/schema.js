@@ -12,6 +12,7 @@ const {
 
 const {
   getAllUsers,
+  getAlerts,
   createNewUser,
   prediction,
   createNewTip,
@@ -19,9 +20,9 @@ const {
   createNewDailyVital,
   updateDailyVital,
   updateAlert,
-  createNewVital,
   authenticate,
   isSignedIn,
+  createNewVital,
   createNewAlert,
   getDailyVitalByPatientId,
 } = require('../../resolvers/usersResolvers')
@@ -175,7 +176,7 @@ const RootQuery = new GraphQLObjectType({
     getAlerts: {
       type: new GraphQLList(AlertType),
       resolve(parent, args) {
-        return getAlert(parent, args)
+        return getAlerts(parent, args)
       },
     },
     isLoggedIn: {

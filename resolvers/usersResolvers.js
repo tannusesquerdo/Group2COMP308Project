@@ -133,6 +133,25 @@ const getAlertByPatientId = async (root, params) => {
   }
 }
 
+/**************************************************************** getAlerts ****************************************************************/
+const getAlerts = async () => {
+
+  try {
+    // Find alert records by patient ID
+    const alertRecords = await Alert.find().select('-patient').lean().exec()
+
+    // If no alert records
+    if (!alertRecords?.length) {
+      return new Error('No alert records found')
+    }
+
+    return alertRecords
+  } catch (error) {
+    return new Error('Error retrieving alert records')
+  }
+}
+
+
 /**************************************************************** createNewUser ****************************************************************/
 const createNewUser = async (root, params) => {
   const { email, password, roles, firstName, lastName, gender, dob } = params
@@ -899,6 +918,7 @@ module.exports = {
   getDailyVitalByPatientId,
   getAllTip,
   getAlertByPatientId,
+  getAlerts,
   createNewUser,
   updateUser,
   deleteUser,
