@@ -10,7 +10,18 @@ const {
   GraphQLNonNull,
 } = require('graphql')
 
-const { getAllUsers, createNewUser } = require('../../resolvers/usersResolvers')
+const {
+  getAllUsers,
+  createNewUser,
+  prediction,
+  createNewTip,
+  updateTip,
+  createNewDailyVital,
+  updateDailyVital,
+  createNewAlert,
+  updateAlert,
+  createNewVital,
+} = require('../../resolvers/usersResolvers')
 
 const UserType = new GraphQLObjectType({
   name: 'User',
@@ -44,7 +55,7 @@ const VitalType = new GraphQLObjectType({
     thal: { type: GraphQLInt },
     num: { type: GraphQLInt },
     updateDate: { type: GraphQLString },
-    patient: { type: GraphQLID },
+    patients: { type: new GraphQLList(GraphQLString) },
   },
 })
 
@@ -301,6 +312,13 @@ const mutation = new GraphQLObjectType({
       resolve(parent, args) {
         return updateAlert(parent, args)
       },
+    },
+    prediction: {
+      type: GraphQLString,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      resolve: (parent, args) => prediction(parent, args),
     },
   },
 })

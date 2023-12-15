@@ -28,6 +28,12 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  vitals: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vital',
+    },
+  ],
 })
 
 UserSchema.pre('save', function (next) {
