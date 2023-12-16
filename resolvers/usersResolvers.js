@@ -401,7 +401,7 @@ const updateVital = async (root, params) => {
   }
 
   // Check if the vital record exists
-  const existingVital = await Vital.findById(vitalId).exec()
+  const existingVital = await Vital.findById({ _id: vitalId }).exec()
 
   if (!existingVital) {
     throw new Error('Vital record not found')
@@ -466,7 +466,7 @@ const deleteVital = async (root, params) => {
 
 /**************************************************************** createNewDailyVital ****************************************************************/
 const createNewDailyVital = async (root, params) => {
-  const { pulseRate, bloodPressure, weight, temperature, respRate, updateDate, patientId } = params
+  const { pulseRate, bloodPressure, weight, temperature, respRate, updateDate, patient } = params
 
   // Confirm data
   if (
@@ -476,13 +476,13 @@ const createNewDailyVital = async (root, params) => {
     !temperature ||
     !respRate ||
     !updateDate ||
-    !patientId
+    !patient
   ) {
     throw new Error('Please provide all required fields')
   }
 
   // Check if the patient exists
-  const existingPatient = await User.findById(patientId).exec()
+  const existingPatient = await User.findById(patient).exec()
 
   if (!existingPatient) {
     throw new Error('Patient not found')
@@ -495,7 +495,7 @@ const createNewDailyVital = async (root, params) => {
     temperature,
     respRate,
     updateDate,
-    patient: patientId,
+    patient: patient,
   }
 
   const dailyVitalModel = new DailyVital(dailyVitalObject)
@@ -763,39 +763,43 @@ const deleteAlert = async (root, params) => {
 const prediction = async (root, params) => {
   const { id } = params
 
-  // Get User
-  const user = await User.findById(id).exec()
+  try {
+    // Get User
+    const user = await User.findById({ _id: id }).exec()
 
-  if (user) {
-    const vitals = await Vital.findOne({ patients: [user._id] }).exec()
+    if (user) {
+      const vitals = await Vital.findOne({ patient: user._id }).exec()
 
-    const model = await tf.loadLayersModel(tf.io.fileSystem('hd-model/heart-model.json'))
+      const model = await tf.loadLayersModel(tf.io.fileSystem('hd-model/heart-model.json'))
 
-    const data = [
-      vitals.age,
-      vitals.sex,
-      vitals.cp,
-      vitals.trestbps,
-      vitals.chol,
-      vitals.fbs,
-      vitals.restecg,
-      vitals.thalach,
-      vitals.exang,
-      vitals.oldpeak,
-      vitals.slope,
-      vitals.ca,
-      vitals.thal,
-    ]
-    const input = tf.tensor2d(data, [1, data.length])
-    const prediction = model.predict(input)
+      const data = [
+        vitals.age,
+        vitals.sex,
+        vitals.cp,
+        vitals.trestbps,
+        vitals.chol,
+        vitals.fbs,
+        vitals.restecg,
+        vitals.thalach,
+        vitals.exang,
+        vitals.oldpeak,
+        vitals.slope,
+        vitals.ca,
+        vitals.thal,
+      ]
+      const input = tf.tensor2d(data, [1, data.length])
+      const prediction = model.predict(input)
 
-    const output = prediction.dataSync()
+      const output = prediction.dataSync()
 
-    vitals.num = output[0] > 0.5 ? 1 : 0
-    await vitals.save()
-    return output[0]
-  } else {
-    throw new Error('User not found')
+      vitals.num = output[0] > 0.5 ? 1 : 0
+      await vitals.save()
+      return output[0]
+    } else {
+      throw new Error('User not found')
+    }
+  } catch (error) {
+    console.log(error)
   }
 }
 

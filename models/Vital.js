@@ -75,12 +75,10 @@ const VitalSchema = new Schema({
     type: Date,
     trim: true,
   },
-  patients: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    },
-  ],
+  patient: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
 })
 const VitalModel = mongoose.model('Vital', VitalSchema)
 module.exports = VitalModel

@@ -25,6 +25,7 @@ const {
   createNewVital,
   createNewAlert,
   getDailyVitalByPatientId,
+  getAllTip,
 } = require('../../resolvers/usersResolvers')
 
 const UserType = new GraphQLObjectType({
@@ -69,13 +70,13 @@ const DailyVitalType = new GraphQLObjectType({
   name: 'DailyVital',
   fields: {
     _id: { type: GraphQLID },
-    pulseRate: { type: GraphQLFloat },
-    bloodPresure: { type: GraphQLFloat },
-    weight: { type: GraphQLFloat },
-    temperature: { type: GraphQLFloat },
+    pulseRate: { type: GraphQLString },
+    bloodPressure: { type: GraphQLString },
+    weight: { type: GraphQLString },
+    temperature: { type: GraphQLString },
     updateDate: { type: GraphQLString },
     respRate: { type: GraphQLString },
-    patient: { type: GraphQLID },
+    patient: { type: UserType },
   },
 })
 
@@ -159,7 +160,7 @@ const RootQuery = new GraphQLObjectType({
     getTip: {
       type: new GraphQLList(TipType),
       resolve(parent, args) {
-        return getTip(parent, args)
+        return getAllTip(parent, args)
       },
     },
     // getAlert
@@ -277,11 +278,12 @@ const mutation = new GraphQLObjectType({
     createNewDailyVital: {
       type: DailyVitalType,
       args: {
-        pulseRate: { type: GraphQLFloat },
-        bloodPresure: { type: GraphQLFloat },
-        weight: { type: GraphQLFloat },
-        temperature: { type: GraphQLFloat },
+        pulseRate: { type: GraphQLString },
+        bloodPressure: { type: GraphQLString },
+        weight: { type: GraphQLString },
+        temperature: { type: GraphQLString },
         updateDate: { type: GraphQLString },
+        respRate: { type: GraphQLString },
         patient: { type: new GraphQLNonNull(GraphQLString) },
       },
       resolve(parent, args) {
@@ -293,10 +295,10 @@ const mutation = new GraphQLObjectType({
       type: DailyVitalType,
       args: {
         id: { type: new GraphQLNonNull(GraphQLString) },
-        pulseRate: { type: GraphQLFloat },
-        bloodPresure: { type: GraphQLFloat },
-        weight: { type: GraphQLFloat },
-        temperature: { type: GraphQLFloat },
+        pulseRate: { type: GraphQLString },
+        bloodPressure: { type: GraphQLString },
+        weight: { type: GraphQLString },
+        temperature: { type: GraphQLString },
         updateDate: { type: GraphQLString },
         patient: { type: new GraphQLNonNull(GraphQLString) },
       },
